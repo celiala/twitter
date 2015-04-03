@@ -4,6 +4,7 @@ import os
 import urllib
 
 import config
+from resource import SharedResourceHandler
 
 
 class TwitterAPI(object):
@@ -31,6 +32,19 @@ class TwitterAPI(object):
             return None, None
 
         key_extractor = KeyExtractor(results)
+        TwitterAPI.save_nested_values_as_params(resource_handler, key_extractor)
+
+        filename = resource_handler.get_results_filename()
+        TwitterAPI.save_results(results, filename)
+
+        summary = TwitterAPI.get_summary(resource_handler, results)
+        filename = resource_handler.get_summary_filename()
+        TwitterAPI.save_results(summary, filename)
+
+        return summary, results
+
+    @staticmethod
+    def save_nested_values_as_params(resource_handler, key_extractor):
         nested_keys = resource_handler.get_nested_keys_to_extract_from_results()
         for nested_key in nested_keys:
             value = key_extractor.get_nested_value(nested_key)
@@ -39,15 +53,8 @@ class TwitterAPI(object):
             else:
                 resource_handler.remove_field(nested_key)
 
-        file_path = resource_handler.get_filename()
-        TwitterAPI.save_results(results, file_path)
-
-        summary = TwitterAPI.get_summary(resource_handler, results)
-        return summary, results
-
     @staticmethod
     def get_summary(resource_handler, data):
-
         summary_fields = resource_handler.get_summary_fields()
         num_items, data = resource_handler.get_object_containing_summary_data(data)
 
@@ -67,13 +74,59 @@ class TwitterAPI(object):
         full_path = os.path.join(config.PARENT_DATA_FOLDER, filename)
         TwitterAPI.make_path_if_not_exists(full_path)
         with open(full_path, 'w') as f:
-            f.write(json.dumps(results, indent=4))
+            f.write(json.dumps(results, indent=2))
 
     @staticmethod
     def make_path_if_not_exists(full_path):
         parent_directory = os.path.dirname(full_path)
         if not os.path.exists(parent_directory):
             os.makedirs(parent_directory)
+
+# --------- helper classes for TwitterAPI ---------
+
+
+class ResourceHandler(SharedResourceHandler):
+
+    def __init__(self, resource, params):
+        super(ResourceHandler, self).__init__(resource, params)
+
+    def get_url(self):
+        url_params = {p: self.params[p] for p in self.params if self.params[p]}
+        return config.TWITTER_BASE_URL.format(resource=self.resource['url']) + urllib.urlencode(url_params)
+
+    def put_field(self, field, value):
+        self.params[field] = value
+
+    def remove_field(self, field):
+        self.resource['filename_fields'].remove(field)
+
+    def get_results_filename(self):
+        return '.'.join(self.filename_parts) + '.json'
+
+    def get_summary_filename(self):
+        return '.'.join(self.filename_parts[:-2]) + '.last.json'
+
+    def get_nested_keys_to_extract_from_results(self):
+        if 'summarize_filename_prefix' in self.resource:
+            return self.resource['summarize_filename_prefix']
+        return []
+
+    def get_summary_fields(self):
+        if 'raw_summary_fields' in self.resource:
+            return self.resource['raw_summary_fields']
+        return []
+
+    def get_summary_params(self):
+        return {f: self.params[f] for f in self.resource['filename_fields'] if f in self.params}
+
+    def get_object_containing_summary_data(self, data):
+        num_items = None
+        if 'raw_data_field' in self.resource and self.resource['raw_data_field']:
+            data = data[self.resource['raw_data_field']]
+        if type(data) is list and data:
+            num_items = len(data)
+            data = data[-1]
+        return num_items, data
 
 
 class KeyExtractor(object):
@@ -100,53 +153,6 @@ class KeyExtractor(object):
         if len(keys) == 1:
             return value[keys[0]]
         return KeyExtractor._traverse_data_for_value(value[keys[0]], keys[1:])
-
-
-class ResourceHandler(object):
-
-    def __init__(self, resource, params):
-        self.resource = resource
-        self.params = params
-
-    def get_url(self):
-        url_params = {p: self.params[p] for p in self.params if self.params[p]}
-        return config.TWITTER_BASE_URL.format(resource=self.resource['url']) + urllib.urlencode(url_params)
-
-    def put_field(self, field, value):
-        self.params[field] = value
-
-    def remove_field(self, field):
-        self.resource['filename_fields'].remove(field)
-
-    def get_filename(self):
-        filename_parts = [self.resource['url']]
-        filename_fields = self.resource['filename_fields']
-
-        filename_parts.extend([str(self.params[f]) for f in filename_fields if f in self.params and self.params[f]])
-        filename_parts.append("json")
-        return '.'.join(filename_parts)
-
-    def get_nested_keys_to_extract_from_results(self):
-        if 'summarize_filename_prefix' in self.resource:
-            return self.resource['summarize_filename_prefix']
-        return []
-
-    def get_summary_fields(self):
-        if 'summary_fields' in self.resource:
-            return self.resource['summary_fields']
-        return []
-
-    def get_summary_params(self):
-        return {f: self.params[f] for f in self.resource['filename_fields'] if f in self.params}
-
-    def get_object_containing_summary_data(self, data):
-        num_items = None
-        if 'data_field' in self.resource and self.resource['data_field']:
-            data = data[self.resource['data_field']]
-        if type(data) is list and data:
-            num_items = len(data)
-            data = data[-1]
-        return num_items, data
 
 
 class TwitterRestAPI(object):
