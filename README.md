@@ -1,4 +1,4 @@
-# twitter
+# Simple command line Twitter API
 Simple command line interface to make calls to the Twitter API
 
 Example, calling:
