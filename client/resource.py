@@ -11,7 +11,7 @@ class SharedResourceHandler(object):
     def get_filename_parts(self):
         filename_parts = [self.resource['url']]
         filename_fields = self.resource['filename_fields']
-        filename_parts.extend([str(self.params[f]) for f in filename_fields if f in self.params and self.params[f]])
+        filename_parts.extend([str(self.params[f]) for f in filename_fields if f in self.params])
         return filename_parts
 
     def get_object_from_json_file(self, path, summary):

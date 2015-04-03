@@ -17,6 +17,7 @@ OAUTH_KEYS = {
 RESOURCE = {
     'followers': {
         'url': 'followers/list',
+        'rate_limit': 15, # how many calls can we make per 15-min window?
         'filename_fields': ['screen_name', 'cursor'],
         'raw_summary_fields': ['next_cursor'],
         'next': {'cursor': 'next_cursor'},
@@ -27,6 +28,7 @@ RESOURCE = {
 
     'friends': {
         'url': 'friends/list',
+        'rate_limit': 15,
         'filename_fields': ['screen_name', 'cursor'],
         'raw_summary_fields': ['next_cursor'],
         'next': {'cursor': 'next_cursor'},
@@ -37,6 +39,7 @@ RESOURCE = {
 
     'statuses': {
         'url': 'statuses/user_timeline',
+        'rate_limit': 180,
         'filename_fields': ['screen_name', 'max_id'],
         'raw_summary_fields': ['created_at', 'id_str'],
         'next': {'max_id': 'id_str'},
@@ -61,6 +64,7 @@ RESOURCE = {
 
     'retweeters': {
         'url': 'statuses/retweeters/ids',
+        'rate_limit': 15,
         'filename_fields': ['id', 'cursor'],
         'raw_summary_fields': ['next_cursor'],
         'next': {'cursor': 'next_cursor'},
@@ -71,6 +75,7 @@ RESOURCE = {
 
     'retweets': {
         'url': 'statuses/retweets/%(id)s',
+        'rate_limit': 15,
         'filename_fields': ['retweeted_status|user|screen_name'],
         'resource_param': 'id',
         'summarize': [

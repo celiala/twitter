@@ -21,7 +21,6 @@ class ArgumentHandler(object):
         resource_handler = ResourceHandler(resource, params)
         if action == 'next':
             params = resource_handler.fill_params_with_last_values()
-            action = 'get'
 
         required_fields = resource_handler.get_required_fields(action)
         missing_fields = [field for field in required_fields if field not in params]
