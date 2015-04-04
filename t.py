@@ -31,6 +31,6 @@ while True:
     action, rate_limit = main(main_args)
     if action != 'next':
         exit(0)
-    sleep_amount_in_secs = (15 * 60 / rate_limit) + 2 # add 2 seconds for good measure
+    sleep_amount_in_secs = (15 * 60 / rate_limit) + 1  # add 2 seconds for good measure
     print 'sleeping for', sleep_amount_in_secs
     time.sleep(sleep_amount_in_secs)
